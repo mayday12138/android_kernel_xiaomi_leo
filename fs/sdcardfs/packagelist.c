@@ -33,9 +33,8 @@
 
 struct hashtable_entry {
 	struct hlist_node hlist;
-	struct hlist_node dlist; /* for deletion cleanup */
-	struct qstr key;
-	atomic_t value;
+	void *key;
+	unsigned int value;
 };
 
 static DEFINE_HASHTABLE(package_to_appid, 8);
@@ -49,10 +48,17 @@ static unsigned int full_name_case_hash(const unsigned char *name, unsigned int 
 {
 	unsigned long hash = init_name_hash();
 
+
 	while (len--)
 		hash = partial_name_hash(tolower(*name++), hash);
 	return end_name_hash(hash);
 }
+
+static unsigned int str_hash(const char *key) {
+	int i;
+	unsigned int h = strlen(key);
+	char *data = (char *)key;
+
 
 static inline void qstr_init(struct qstr *q, const char *name)
 {
@@ -61,29 +67,13 @@ static inline void qstr_init(struct qstr *q, const char *name)
 	q->hash = full_name_case_hash(q->name, q->len);
 }
 
-static inline int qstr_copy(const struct qstr *src, struct qstr *dest)
-{
-	dest->name = kstrdup(src->name, GFP_KERNEL);
-	dest->hash_len = src->hash_len;
-	return !!dest->name;
-}
-
-
-static appid_t __get_appid(const struct qstr *key)
-{
+static int contain_appid_key(struct packagelist_data *pkgl_dat, unsigned int appid) {
 	struct hashtable_entry *hash_cur;
-	unsigned int hash = key->hash;
-	appid_t ret_id;
 
-	rcu_read_lock();
-	hash_for_each_possible_rcu(package_to_appid, hash_cur, hlist, hash) {
-		if (qstr_case_eq(key, &hash_cur->key)) {
-			ret_id = atomic_read(&hash_cur->value);
-			rcu_read_unlock();
-			return ret_id;
-		}
-	}
-	rcu_read_unlock();
+	hash_for_each_possible(pkgl_dat->appid_with_rw, hash_cur, hlist, appid)
+		if ((void *)(uintptr_t)appid == hash_cur->key)
+			return 1;
+
 	return 0;
 }
 
@@ -91,14 +81,17 @@ appid_t get_appid(const char *key)
 {
 	struct qstr q;
 
-	qstr_init(&q, key);
-	return __get_appid(&q);
+	appid = multiuser_get_app_id(current_fsuid());
+	mutex_lock(&pkgl_dat->hashtable_lock);
+	ret = contain_appid_key(pkgl_dat, appid);
+	mutex_unlock(&pkgl_dat->hashtable_lock);
+	return ret;
 }
 
 static appid_t __get_ext_gid(const struct qstr *key)
 {
 	struct hashtable_entry *hash_cur;
-	unsigned int hash = key->hash;
+	unsigned int hash = str_hash(app_name);
 	appid_t ret_id;
 
 	rcu_read_lock();
@@ -194,7 +187,8 @@ static struct hashtable_entry *alloc_hashtable_entry(const struct qstr *key,
 	return ret;
 }
 
-static int insert_packagelist_appid_entry_locked(const struct qstr *key, appid_t value)
+static int insert_str_to_int(struct packagelist_data *pkgl_dat, char *key,
+		unsigned int value)
 {
 	struct hashtable_entry *hash_cur;
 	struct hashtable_entry *new_entry;
@@ -231,22 +225,26 @@ static int insert_ext_gid_entry_locked(const struct qstr *key, appid_t value)
 	return 0;
 }
 
-static int insert_userid_exclude_entry_locked(const struct qstr *key, userid_t value)
+static int insert_int_to_null(struct packagelist_data *pkgl_dat, unsigned int key,
+		unsigned int value)
 {
 	struct hashtable_entry *hash_cur;
 	struct hashtable_entry *new_entry;
 	unsigned int hash = key->hash;
 
-	/* Only insert if not already present */
-	hash_for_each_possible_rcu(package_to_userid, hash_cur, hlist, hash) {
-		if (atomic_read(&hash_cur->value) == value &&
-				qstr_case_eq(key, &hash_cur->key))
+	//printk(KERN_INFO "sdcardfs: %s: %d: %d\n", __func__, (int)key, value);
+	hash_for_each_possible(pkgl_dat->appid_with_rw,	hash_cur, hlist, key) {
+		if ((void *)(uintptr_t)key == hash_cur->key) {
+			hash_cur->value = value;
 			return 0;
 	}
 	new_entry = alloc_hashtable_entry(key, value);
 	if (!new_entry)
 		return -ENOMEM;
-	hash_add_rcu(package_to_userid, &new_entry->hlist, hash);
+
+	new_entry->key = (void *)(uintptr_t)key;
+	new_entry->value = value;
+	hash_add(pkgl_dat->appid_with_rw, &new_entry->hlist, key);
 	return 0;
 }
 
@@ -358,47 +356,49 @@ static void remove_packagelist_entry_locked(const struct qstr *key)
 		free_hashtable_entry(hash_cur);
 }
 
-static void remove_packagelist_entry(const struct qstr *key)
-{
-	mutex_lock(&sdcardfs_super_list_lock);
-	remove_packagelist_entry_locked(key);
-	fixup_all_perms_name(key);
-	mutex_unlock(&sdcardfs_super_list_lock);
-}
+	while ((read_amount = sys_read(fd, pkgl_dat->read_buf,
+					sizeof(pkgl_dat->read_buf))) > 0) {
+		unsigned int appid;
+		char *token;
+		int one_line_len = 0;
+		int additional_read;
+		unsigned long ret_gid;
 
-static void remove_ext_gid_entry_locked(const struct qstr *key, gid_t group)
-{
-	struct hashtable_entry *hash_cur;
-	unsigned int hash = key->hash;
-
-	hash_for_each_possible_rcu(ext_to_groupid, hash_cur, hlist, hash) {
-		if (qstr_case_eq(key, &hash_cur->key) && atomic_read(&hash_cur->value) == group) {
-			hash_del_rcu(&hash_cur->hlist);
-			synchronize_rcu();
-			free_hashtable_entry(hash_cur);
-			break;
+		while (one_line_len < read_amount) {
+			if (pkgl_dat->read_buf[one_line_len] == '\n') {
+				one_line_len++;
+				break;
+			}
+			one_line_len++;
 		}
-	}
-}
+		additional_read = read_amount - one_line_len;
+		if (additional_read > 0)
+			sys_lseek(fd, -additional_read, SEEK_CUR);
 
-static void remove_ext_gid_entry(const struct qstr *key, gid_t group)
-{
-	mutex_lock(&sdcardfs_super_list_lock);
-	remove_ext_gid_entry_locked(key, group);
-	mutex_unlock(&sdcardfs_super_list_lock);
-}
+		if (sscanf(pkgl_dat->read_buf, "%s %u %*d %*s %*s %s",
+				pkgl_dat->app_name_buf, &appid,
+				pkgl_dat->gids_buf) == 3) {
+			ret = insert_str_to_int(pkgl_dat, pkgl_dat->app_name_buf, appid);
+			if (ret) {
+				sys_close(fd);
+				mutex_unlock(&pkgl_dat->hashtable_lock);
+				return ret;
+			}
 
-static void remove_userid_all_entry_locked(userid_t userid)
-{
-	struct hashtable_entry *hash_cur;
-	struct hlist_node *h_t;
-	HLIST_HEAD(free_list);
-	int i;
-
-	hash_for_each_rcu(package_to_userid, i, hash_cur, hlist) {
-		if (atomic_read(&hash_cur->value) == userid) {
-			hash_del_rcu(&hash_cur->hlist);
-			hlist_add_head(&hash_cur->dlist, &free_list);
+			token = strtok_r(pkgl_dat->gids_buf, ",", &pkgl_dat->strtok_last);
+			while (token != NULL) {
+				if (!kstrtoul(token, 10, &ret_gid) &&
+						(ret_gid == pkgl_dat->write_gid)) {
+					ret = insert_int_to_null(pkgl_dat, appid, 1);
+					if (ret) {
+						sys_close(fd);
+						mutex_unlock(&pkgl_dat->hashtable_lock);
+						return ret;
+					}
+					break;
+				}
+				token = strtok_r(NULL, ",", &pkgl_dat->strtok_last);
+			}
 		}
 	}
 	synchronize_rcu();
