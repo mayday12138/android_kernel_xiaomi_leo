@@ -158,6 +158,10 @@ struct dentry_operations {
 	char *(*d_dname)(struct dentry *, char *, int);
 	struct vfsmount *(*d_automount)(struct path *);
 	int (*d_manage)(struct dentry *, bool);
+<<<<<<< HEAD
+=======
+	void (*d_canonical_path)(const struct path *, struct path *);
+>>>>>>> 3a806df4bb8... vfs: change d_canonical_path to take two paths
 } ____cacheline_aligned;
 
 /*
