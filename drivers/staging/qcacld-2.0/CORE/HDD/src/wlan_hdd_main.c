@@ -188,6 +188,12 @@ static int wlan_hdd_inited;
 static char fwpath_mode_local[BUF_LEN];
 #endif
 
+#ifdef CONFIG_MACH_XIAOMI_MSM8992
+static char *mac;
+module_param(mac, charp, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+MODULE_PARM_DESC(mac, "QCA 6174 mac address");
+#endif
+
 /*
  * spinlock for synchronizing asynchronous request/response
  * (full description of use in wlan_hdd_main.h)
