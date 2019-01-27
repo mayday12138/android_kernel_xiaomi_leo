@@ -2751,8 +2751,8 @@
 	qcom,msm-thermal {
 		compatible = "qcom,msm-thermal";
 		qcom,sensor-id = <7>;
-		qcom,poll-ms = <250>;
-		qcom,limit-temp = <60>;
+		qcom,poll-ms = <300>;
+		qcom,limit-temp = <80>;      
 		qcom,temp-hysteresis = <10>;
 		qcom,therm-reset-temp = <115>;
 		qcom,disable-ocr;
@@ -2761,17 +2761,17 @@
 		qcom,disable-cx-phase-ctrl;
 		qcom,freq-step = <2>;
 		qcom,freq-control-mask = <0x3f>;
-		qcom,core-limit-temp = <80>;
+		qcom,core-limit-temp = <100>;
 		qcom,core-temp-hysteresis = <10>;
 		qcom,core-control-mask = <0x3e>;
-		qcom,hotplug-temp = <105>;
+		qcom,hotplug-temp = <110>;
 		qcom,hotplug-temp-hysteresis = <40>;
 		qcom,cpu-sensors = "tsens_tz_sensor7", "tsens_tz_sensor7",
 				   "tsens_tz_sensor9", "tsens_tz_sensor10",
 				   "tsens_tz_sensor13", "tsens_tz_sensor14";
 		qcom,freq-mitigation-temp = <100>;
 		qcom,freq-mitigation-temp-hysteresis = <20>;
-		qcom,freq-mitigation-value = <768000>;
+		qcom,freq-mitigation-value = <960000>;
 		qcom,freq-mitigation-control-mask = <0x30>;
 		qcom,online-hotplug-core;
 		qcom,synchronous-cluster-id = <0 1>;
@@ -2810,7 +2810,7 @@
 		qcom,ibat-monitor {
 			qcom,low-threshold-uamp = <3400000>;
 			qcom,high-threshold-uamp = <4200000>;
-			qcom,mitigation-freq-khz = <768000>;
+			qcom,mitigation-freq-khz = <960000>;
 			qcom,vph-high-threshold-uv = <3500000>;
 			qcom,vph-low-threshold-uv = <3300000>;
 			qcom,soc-low-threshold = <10>;
@@ -3284,3 +3284,4 @@
 #include "dsi-panel-sim-cmd.dtsi"
 #include "dsi-panel-sim-dualmipi0-cmd.dtsi"
 #include "dsi-panel-sim-dualmipi1-cmd.dtsi"
+
