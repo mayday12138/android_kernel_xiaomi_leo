@@ -907,7 +907,7 @@
 			< 1632000 >,
 			< 1689600 >,
 			< 1824000 >,
-            < 1958400 >,
+            < 1958000 >,
             < 2016000 >;
 
 	};
@@ -965,7 +965,7 @@
 				< 1632000000 13>,
 				< 1689600000 14>,
 				< 1824000000 15>,
-				< 1958400000 16>,
+				< 1958000000 16>,
 				< 2016000000 17>;
 		qcom,cci-speedbin0-v0 =
 				<	   0 0>,
@@ -2751,19 +2751,20 @@
 	qcom,msm-thermal {
 		compatible = "qcom,msm-thermal";
 		qcom,sensor-id = <7>;
-		qcom,poll-ms = <300>; 
-		qcom,limit-temp = <60>;
+		qcom,poll-ms = <300>;
+		qcom,limit-temp = <80>;      
 		qcom,temp-hysteresis = <10>;
-		qcom,therm-reset-temp = <120>;
+		qcom,therm-reset-temp = <115>;
 		qcom,disable-ocr;
 		qcom,disable-psm;
 		qcom,disable-gfx-phase-ctrl;
 		qcom,disable-cx-phase-ctrl;
 		qcom,freq-step = <2>;
 		qcom,freq-control-mask = <0x3f>;
+		qcom,core-limit-temp = <100>;
 		qcom,core-temp-hysteresis = <10>;
 		qcom,core-control-mask = <0x3e>;
-		qcom,hotplug-temp = <105>;
+		qcom,hotplug-temp = <110>;
 		qcom,hotplug-temp-hysteresis = <40>;
 		qcom,cpu-sensors = "tsens_tz_sensor7", "tsens_tz_sensor7",
 				   "tsens_tz_sensor9", "tsens_tz_sensor10",
@@ -2794,7 +2795,7 @@
 
 		msm_thermal_freq: qcom,vdd-apps-rstr{
 			qcom,vdd-rstr-reg = "vdd-apps";
-			qcom,levels = <960000 1248000 1824000>;
+			qcom,levels = <768000 1248000 1824000>;
 			qcom,freq-req;
 		};
 	};
@@ -3283,3 +3284,4 @@
 #include "dsi-panel-sim-cmd.dtsi"
 #include "dsi-panel-sim-dualmipi0-cmd.dtsi"
 #include "dsi-panel-sim-dualmipi1-cmd.dtsi"
+
