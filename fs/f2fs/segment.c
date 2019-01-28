@@ -2072,7 +2072,7 @@ static int get_ssr_segment(struct f2fs_sb_info *sbi, int type)
 {
 	struct curseg_info *curseg = CURSEG_I(sbi, type);
 	const struct victim_selection *v_ops = DIRTY_I(sbi)->v_ops;
-
+	unsigned segno = NULL_SEGNO;
 	int i, cnt;
 	bool reversed = false;
 
