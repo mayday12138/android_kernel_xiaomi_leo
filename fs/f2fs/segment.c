@@ -1371,32 +1371,6 @@ static int f2fs_issue_discard(struct f2fs_sb_info *sbi,
 	return err;
 }
 
-static void __add_discard_entry(struct f2fs_sb_info *sbi,
-		struct cp_control *cpc, struct seg_entry *se,
-		unsigned int start, unsigned int end)
-{
-	struct list_head *head = &SM_I(sbi)->dcc_info->discard_entry_list;
-	struct discard_entry *new, *last;
-
-	if (!list_empty(head)) {
-		last = list_last_entry(head, struct discard_entry, list);
-		if (START_BLOCK(sbi, cpc->trim_start) + start ==
-				last->blkaddr + last->len &&
-				last->len < MAX_DISCARD_BLOCKS(sbi)) {
-			last->len += end - start;
-			goto done;
-		}
-	}
-
-	new = f2fs_kmem_cache_alloc(discard_entry_slab, GFP_NOFS);
-	INIT_LIST_HEAD(&new->list);
-	new->blkaddr = START_BLOCK(sbi, cpc->trim_start) + start;
-	new->len = end - start;
-	list_add_tail(&new->list, head);
-done:
-	SM_I(sbi)->dcc_info->nr_discards += end - start;
-}
-
 static bool add_discard_addrs(struct f2fs_sb_info *sbi, struct cp_control *cpc,
 							bool check_only)
 {
