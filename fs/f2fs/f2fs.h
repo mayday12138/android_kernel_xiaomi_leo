@@ -307,6 +307,12 @@ struct discard_info {
 	block_t start;			/* actual start address in dev */
 };
 
+enum {
+	D_PREP,
+	D_SUBMIT,
+	D_DONE,
+};
+
 struct discard_cmd {
 	struct rb_node rb_node;		/* rb node located in rb-tree */
 	union {
@@ -320,10 +326,18 @@ struct discard_cmd {
 	};
 	struct list_head list;		/* command list */
 	struct completion wait;		/* compleation */
+
 	struct block_device *bdev;	/* bdev */
 	unsigned short ref;		/* reference count */
 	unsigned char state;		/* state */
 	int error;			/* bio error */
+
+	block_t lstart;			/* logical start address */
+	block_t len;			/* length */
+	struct bio *bio;		/* bio */
+	int error;
+	int state;			/* state */
+
 };
 
 struct discard_cmd_control {
@@ -340,6 +354,12 @@ struct discard_cmd_control {
 	atomic_t issing_discard;		/* # of issing discard */
 	atomic_t discard_cmd_cnt;		/* # of cached cmd count */
 	struct rb_root root;			/* root of discard rb-tree */
+	struct list_head discard_entry_list;	/* 4KB discard entry list */
+	int nr_discards;			/* # of discards in the list */
+	struct list_head discard_cmd_list;	/* discard cmd list */
+	wait_queue_head_t discard_wait_queue;	/* waiting queue for wake-up */
+	struct mutex cmd_lock;
+	int max_discards;			/* max. discards to be issued */
 };
 
 /* for the list of fsync inodes, used only during recovery */
