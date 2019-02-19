@@ -549,7 +549,7 @@
 			compatible = "qcom,spm-regulator";
 			reg = <0x2900 0x100>;
 			regulator-name = "pm8994_s8";
-			regulator-min-microvolt = <650000>;
+			regulator-min-microvolt = <640000>;
 			regulator-max-microvolt = <1180000>;
 			qcom,cpu-num = <0>;
 		};
@@ -673,11 +673,11 @@
 		qcom,cpr-voltage-ceiling-override =
 				<0xFFFFFFFF 0  800000  800000  900000  900000
 					      1000000 1000000 1115000 1115000
-					      1180000 1180000 1180000 1180000>;
+					      1180000 1180000 1180000 1200000>;
 		qcom,cpr-voltage-floor-override =
 				<0xFFFFFFFF 0  640000  655000  700000  735000
 					       800000  835000  850000  875000
-					       950000 1000000 1000000 1000000>;
+					       950000 1000000 1000000 1100000>;
 		qcom,cpr-fuse-version-map =
 				<0 0xffffffff 0 0 0 0 0>,
 				<0 0xffffffff 1 0 0 0 0>,
@@ -759,10 +759,12 @@
 				<7   864000000>,
 				<8   960000000>,
 				<9  1248000000>,
-				<10 1440000000>;
+				<10 1440000000>,
+				<11 1536000000>,
+				<12 1632000000>;
 		qcom,cpr-speed-bin-max-corners =
 				<0 0 2 4 6 9>,
-				<1 0 2 4 6 10>;
+				<1 0 2 4 6 12>;
 		qcom,cpr-enable;
 	};
 
@@ -847,13 +849,13 @@
 					       900000 1000000 1000000 1000000
 					      1115000 1115000 1115000 1115000
 					      1115000 1115000 1180000 1180000 
-                          1180000>;
+                          1200000>;
 		qcom,cpr-voltage-floor-override =
 				<0xFFFFFFFF 0  640000  640000  665000  690000
 					       735000  745000  770000  785000
 					       850000  860000  880000  900000
 					       920000  935000 1000000  1000000
-                           1000000>;
+                           1100000>;
 		qcom,cpr-fuse-version-map =
 				<0xffffffff 0xffffffff 0 4 4 4 4>,
 				<0xffffffff 0xffffffff 1 4 4 4 4>,
