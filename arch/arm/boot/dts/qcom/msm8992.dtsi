@@ -27,6 +27,23 @@
 		bootargs = "sched_enable_hmp=1 sched_enable_power_aware=1 sched_same_power_cost_cpus=0-3";
 	};
 
+	firmware: firmware {
+		android {
+			compatible = "android,firmware";
+			fstab {
+				compatible = "android,fstab";
+				system {
+					compatible = "android,system";
+					dev = "/dev/block/platform/soc.0/f9824900.sdhci/by-name/system";
+					type = "ext4";
+					mnt_flags = "ro,barrier=1,discard";
+					fsmgr_flags = "wait";
+					status = "ok";
+				};
+			};
+		};
+	};
+
 	aliases {
 		spi0 = &spi_0;
 		spi12 = &spi_12;
@@ -197,23 +214,6 @@
 	};
 
 	soc: soc { };
-
-	firmware: firmware {
-		android {
-			compatible = "android,firmware";
-			fstab {
-				compatible = "android,fstab";
-				system {
-					compatible = "android,system";
-					dev = "/dev/block/platform/soc.0/f9824900.sdhci/by-name/system";
-					type = "ext4";
-					mnt_flags = "ro,barrier=1";
-					fsmgr_flags = "wait";
-					status = "ok";
-				};
-			};
-		};
-	};
 
 	memory {
 		#address-cells = <2>;
@@ -762,12 +762,13 @@
 		governor = "cpufreq";
 		freq-tbl-khz =
 			<  134400 >,
-			<  300000 >,
+			<  302400 >,
 			<  384000 >,
 			<  556800 >,
 			<  600000 >,
 			<  729600 >,
-			<  787200 >;
+			<  787200 >,
+			<  864000 >;
 	};
 
 	cpubw: qcom,cpubw {
@@ -818,24 +819,33 @@
 				<  787200  3509 >,
 				<  864000  4173 >,
 				<  960000  5271 >,
-				< 1440000  7102 >;
+				< 1440000  7102 >,
+				< 1536000  7102 >,
+				< 1632000  7102 >;
 			cpu-to-dev-map-4 =
+ 				<  302400  1525 >,
 				<  384000  1525 >,
 				<  633600  2288 >,
 				<  768000  3509 >,
 				<  864000  4173 >,
 				<  960000  5271 >,
 				< 1344000  5928 >,
-				< 1824000  7102 >;
+				< 1824000  7102 >,
+				< 1958400  7102 >,
+				< 2016000  7102 >;
 		};
 
 		mincpubw-cpufreq {
 			target-dev = <&mincpubw>;
 			cpu-to-dev-map-0 =
-				< 1440000 1525 >;
+				< 1440000 1525 >,
+				< 1536000 1525 >,
+				< 1632000 1525 >;
 			cpu-to-dev-map-4 =
 				< 1689600 1525 >,
-				< 1824000 5928 >;
+				< 1824000 1525 >,
+				< 1958400 1525 >,
+				< 2016000 5928 >;
 		};
 
 		cci-cpufreq {
@@ -846,15 +856,20 @@
 				<  787200 384000 >,
 				<  864000 556800 >,
 				<  960000 729600 >,
-				< 1440000 787200 >;
+				< 1440000 787200 >,
+				< 1536000 787200 >,
+				< 1632000 864000 >;
 			cpu-to-dev-map-4 =
+				<  302400 134400 >,
 				<  384000 134400 >,
 				<  480000 300000 >,
 				<  633600 384000 >,
 				<  768000 556800 >,
 				<  960000 600000 >,
 				< 1440000 729600 >,
-				< 1824000 787200 >;
+				< 1824000 787200 >,
+				< 1958400 864000 >,
+				< 2016000 864000 >;
 		};
 	};
 
@@ -873,6 +888,7 @@
 		qcom,governor-per-policy;
 
 		qcom,cpufreq-table-0 =
+            <  302400 >,
 			<  384000 >,
 			<  460800 >,
 			<  600000 >,
@@ -881,9 +897,11 @@
 			<  864000 >,
 			<  960000 >,
 			< 1248000 >,
-			< 1440000 >;
-
+			< 1440000 >,
+			< 1536000 >,
+			< 1632000 >;
 		qcom,cpufreq-table-4 =
+            <  302400 >,
 			<  384000 >,
 			<  480000 >,
 			<  633600 >,
@@ -896,7 +914,9 @@
 			< 1536000 >,
 			< 1632000 >,
 			< 1689600 >,
-			< 1824000 >;
+			< 1824000 >,
+            < 1958400 >,
+            < 2016000 >;
 
 	};
 
@@ -915,17 +935,8 @@
 		vdd-cci-supply = <&apc0_vreg_corner>;
 		vdd-dig-supply = <&pm8994_s2_corner_ao>;
 		qcom,a53-speedbin0-v0 =
-				<	   0 0>,
-				<  384000000 2>,
-				<  460800000 3>,
-				<  600000000 4>,
-				<  672000000 5>,
-				<  787200000 6>,
-				<  864000000 7>,
-				<  960000000 8>,
-				< 1248000000 9>;
-		qcom,a53-speedbin1-v0 =
-				<	   0 0>,
+				<          0 0>,
+                <  302400000 1>,
 				<  384000000 2>,
 				<  460800000 3>,
 				<  600000000 4>,
@@ -934,9 +945,27 @@
 				<  864000000 7>,
 				<  960000000 8>,
 				< 1248000000 9>,
-				< 1440000000 10>;
+				< 1440000000 10>,
+				< 1536000000 11>,
+				< 1632000000 12>;
+		qcom,a53-speedbin1-v0 =
+				<          0 0>,
+                <  302400000 1>,
+				<  384000000 2>,
+				<  460800000 3>,
+				<  600000000 4>,
+				<  672000000 5>,
+				<  787200000 6>,
+				<  864000000 7>,
+				<  960000000 8>,
+				< 1248000000 9>,
+				< 1440000000 10>,
+				< 1536000000 11>,
+				< 1632000000 12>;
+
 		qcom,a57-speedbin0-v0 =
-				<	   0 0>,
+				<          0 0>,
+                <  302400000 5>,
 				<  384000000 5>,
 				<  480000000 5>,
 				<  633600000 5>,
@@ -949,16 +978,19 @@
 				< 1536000000 12>,
 				< 1632000000 13>,
 				< 1689600000 14>,
-				< 1824000000 15>;
+				< 1824000000 15>,
+				< 1958400000 16>,
+				< 2016000000 17>;
 		qcom,cci-speedbin0-v0 =
-				<	   0 0>,
+				<          0 0>,
 				<  134400000 2>,
-				<  300000000 4>,
+				<  302400000 4>,
 				<  384000000 6>,
 				<  556800000 6>,
 				<  600000000 8>,
 				<  729600000 8>,
-				<  787200000 9>;
+				<  787200000 9>,
+				<  864000000 9>;
 		clock-names = "xo_ao", "aux_clk";
 		clocks = <&clock_rpm clk_cxo_clk_src_ao>,
 			 <&clock_gcc clk_gpll0_ao>;
@@ -2734,8 +2766,8 @@
 	qcom,msm-thermal {
 		compatible = "qcom,msm-thermal";
 		qcom,sensor-id = <7>;
-		qcom,poll-ms = <250>;
-		qcom,limit-temp = <60>;
+		qcom,poll-ms = <300>;
+		qcom,limit-temp = <80>;      
 		qcom,temp-hysteresis = <10>;
 		qcom,therm-reset-temp = <115>;
 		qcom,disable-ocr;
@@ -2744,17 +2776,17 @@
 		qcom,disable-cx-phase-ctrl;
 		qcom,freq-step = <2>;
 		qcom,freq-control-mask = <0x3f>;
-		qcom,core-limit-temp = <80>;
+		qcom,core-limit-temp = <100>;
 		qcom,core-temp-hysteresis = <10>;
 		qcom,core-control-mask = <0x3e>;
-		qcom,hotplug-temp = <105>;
+		qcom,hotplug-temp = <110>;
 		qcom,hotplug-temp-hysteresis = <40>;
 		qcom,cpu-sensors = "tsens_tz_sensor7", "tsens_tz_sensor7",
 				   "tsens_tz_sensor9", "tsens_tz_sensor10",
 				   "tsens_tz_sensor13", "tsens_tz_sensor14";
 		qcom,freq-mitigation-temp = <100>;
 		qcom,freq-mitigation-temp-hysteresis = <20>;
-		qcom,freq-mitigation-value = <768000>;
+		qcom,freq-mitigation-value = <960000>;
 		qcom,freq-mitigation-control-mask = <0x30>;
 		qcom,online-hotplug-core;
 		qcom,synchronous-cluster-id = <0 1>;
@@ -2793,7 +2825,7 @@
 		qcom,ibat-monitor {
 			qcom,low-threshold-uamp = <3400000>;
 			qcom,high-threshold-uamp = <4200000>;
-			qcom,mitigation-freq-khz = <768000>;
+			qcom,mitigation-freq-khz = <960000>;
 			qcom,vph-high-threshold-uv = <3500000>;
 			qcom,vph-low-threshold-uv = <3300000>;
 			qcom,soc-low-threshold = <10>;
@@ -3267,3 +3299,4 @@
 #include "dsi-panel-sim-cmd.dtsi"
 #include "dsi-panel-sim-dualmipi0-cmd.dtsi"
 #include "dsi-panel-sim-dualmipi1-cmd.dtsi"
+
