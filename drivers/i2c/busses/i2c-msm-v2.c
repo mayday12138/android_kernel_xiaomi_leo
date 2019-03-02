@@ -92,10 +92,9 @@ static void i2c_msm_dbg_dump_diag(struct i2c_msm_ctrl *ctrl,
 
 	if (xfer->err == I2C_MSM_ERR_TIMEOUT) {
 		/*
-		 * if we are not the bus master or SDA/SCL is
-		 * low then it may be that slave is pulling the
-		 * lines low. Otherwise it is likely a GPIO
-		 * issue
+		 * if we are not the bus master or SDA/SCL is low then it may be
+		 * that slave is pulling the lines low. Otherwise it is likely a
+		 * GPIO issue
 		 */
 		if (!(status & QUP_BUS_MASTER))
 			snprintf(buf, I2C_MSM_REG_2_STR_BUF_SZ,
@@ -2240,6 +2239,7 @@ static int i2c_msm_pm_xfer_start(struct i2c_msm_ctrl *ctrl)
 
 static void i2c_msm_pm_xfer_end(struct i2c_msm_ctrl *ctrl)
 {
+
 	atomic_set(&ctrl->xfer.is_active, 0);
 
 	/*

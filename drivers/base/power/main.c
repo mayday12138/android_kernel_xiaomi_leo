@@ -523,6 +523,7 @@ static void dpm_resume_noirq(pm_message_t state)
 		get_device(dev);
 		list_move_tail(&dev->power.entry, &dpm_late_early_list);
 		mutex_unlock(&dpm_list_mtx);
+
 		error = device_resume_noirq(dev, state);
 		if (error) {
 			suspend_stats.failed_resume_noirq++;

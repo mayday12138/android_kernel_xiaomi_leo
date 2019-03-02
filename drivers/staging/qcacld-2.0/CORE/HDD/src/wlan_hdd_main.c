@@ -159,7 +159,6 @@ extern int hdd_hostapd_stop (struct net_device *dev);
 #ifdef MEMORY_DEBUG
 #define MEMORY_DEBUG_STR " +MEMORY_DEBUG"
 #else
-
 #define MEMORY_DEBUG_STR ""
 #endif
 

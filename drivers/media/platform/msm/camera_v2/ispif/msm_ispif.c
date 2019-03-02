@@ -313,7 +313,7 @@ static int msm_ispif_reset(struct ispif_device *ispif)
 			ispif->base + ISPIF_VFE_m_INTF_CMD_0(i));
 		msm_camera_io_w(ISPIF_STOP_INTF_IMMEDIATELY,
 			ispif->base + ISPIF_VFE_m_INTF_CMD_1(i));
-		pr_debug("%s: base %lx", __func__, (unsigned long)ispif->base);
+		pr_debug("%s: base %pK", __func__, ispif->base);
 		msm_camera_io_w(0, ispif->base +
 			ISPIF_VFE_m_PIX_INTF_n_CID_MASK(i, 0));
 		msm_camera_io_w(0, ispif->base +
@@ -347,7 +347,7 @@ static int msm_ispif_subdev_g_chip_ident(struct v4l2_subdev *sd,
 }
 
 static void msm_ispif_sel_csid_core(struct ispif_device *ispif,
-	uint8_t intftype, uint8_t csid, uint8_t vfe_intf)
+	uint8_t intftype, uint8_t csid, enum msm_ispif_vfe_intf vfe_intf)
 {
 	uint32_t data;
 
@@ -387,7 +387,7 @@ static void msm_ispif_sel_csid_core(struct ispif_device *ispif,
 }
 
 static void msm_ispif_enable_crop(struct ispif_device *ispif,
-	uint8_t intftype, uint8_t vfe_intf, uint16_t start_pixel,
+	uint8_t intftype, enum msm_ispif_vfe_intf vfe_intf, uint16_t start_pixel,
 	uint16_t end_pixel)
 {
 	uint32_t data;
@@ -419,7 +419,7 @@ static void msm_ispif_enable_crop(struct ispif_device *ispif,
 }
 
 static void msm_ispif_enable_intf_cids(struct ispif_device *ispif,
-	uint8_t intftype, uint16_t cid_mask, uint8_t vfe_intf, uint8_t enable)
+	uint8_t intftype, uint16_t cid_mask, enum msm_ispif_vfe_intf vfe_intf, uint8_t enable)
 {
 	uint32_t intf_addr, data;
 
@@ -461,7 +461,7 @@ static void msm_ispif_enable_intf_cids(struct ispif_device *ispif,
 }
 
 static int msm_ispif_validate_intf_status(struct ispif_device *ispif,
-	uint8_t intftype, uint8_t vfe_intf)
+	uint8_t intftype, enum msm_ispif_vfe_intf vfe_intf)
 {
 	int rc = 0;
 	uint32_t data = 0;
@@ -501,7 +501,7 @@ static int msm_ispif_validate_intf_status(struct ispif_device *ispif,
 }
 
 static void msm_ispif_select_clk_mux(struct ispif_device *ispif,
-	uint8_t intftype, uint8_t csid, uint8_t vfe_intf)
+	uint8_t intftype, uint8_t csid, enum msm_ispif_vfe_intf vfe_intf)
 {
 	uint32_t data = 0;
 
@@ -1135,8 +1135,8 @@ static int msm_ispif_set_vfe_info(struct ispif_device *ispif,
 {
 	if (!vfe_info || (vfe_info->num_vfe <= 0) ||
 		((uint32_t)(vfe_info->num_vfe) > ispif->hw_num_isps)) {
-		pr_err("Invalid VFE info: %p %d\n", vfe_info,
-			(vfe_info ? vfe_info->num_vfe:0));
+		pr_err("Invalid VFE info: %pK %d\n", vfe_info,
+			   (vfe_info ? vfe_info->num_vfe:0));
 		return -EINVAL;
 	}
 	memcpy(&ispif->vfe_info, vfe_info, sizeof(struct msm_ispif_vfe_info));
@@ -1168,7 +1168,7 @@ static int msm_ispif_init(struct ispif_device *ispif,
 
 	if (ispif->csid_version >= CSID_VERSION_V30) {
 		if (!ispif->clk_mux_mem || !ispif->clk_mux_io) {
-			pr_err("%s csi clk mux mem %p io %p\n", __func__,
+			pr_err("%s csi clk mux mem %pK io %pK\n", __func__,
 				ispif->clk_mux_mem, ispif->clk_mux_io);
 			rc = -ENOMEM;
 			return rc;

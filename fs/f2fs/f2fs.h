@@ -319,12 +319,10 @@ struct discard_cmd {
 	};
 	struct list_head list;		/* command list */
 	struct completion wait;		/* compleation */
-
 	struct block_device *bdev;	/* bdev */
 	unsigned short ref;		/* reference count */
 	unsigned char state;		/* state */
 	int error;			/* bio error */
-
 };
 
 struct discard_cmd_control {
@@ -742,7 +740,6 @@ struct f2fs_nm_info {
 	unsigned char (*free_nid_bitmap)[NAT_ENTRY_BITMAP_SIZE];
 	unsigned char *nat_block_bitmap;
 	unsigned short *free_nid_count;	/* free nid count of NAT block */
-	spinlock_t free_nid_lock;	/* protect updating of nid count */
 
 	/* for checkpoint */
 	char *nat_bitmap;		/* NAT bitmap pointer */

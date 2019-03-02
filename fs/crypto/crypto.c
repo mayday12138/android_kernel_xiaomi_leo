@@ -25,7 +25,7 @@
 #include <linux/scatterlist.h>
 #include <linux/ratelimit.h>
 #include <linux/dcache.h>
-#include <linux/fscrypto.h>
+#include <linux/namei.h>
 #include <crypto/aes.h>
 #include "fscrypt_private.h"
 
@@ -335,6 +335,9 @@ static int fscrypt_d_revalidate(struct dentry *dentry, unsigned int flags)
 {
 	struct dentry *dir;
 	int dir_has_key, cached_with_key;
+
+	if (flags & LOOKUP_RCU)
+		return -ECHILD;
 
 	dir = dget_parent(dentry);
 	if (!d_inode(dir)->i_sb->s_cop->is_encrypted(d_inode(dir))) {

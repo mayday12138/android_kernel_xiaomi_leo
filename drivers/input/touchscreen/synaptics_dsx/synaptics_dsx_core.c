@@ -1993,9 +1993,12 @@ static int synaptics_rmi4_f11_init(struct synaptics_rmi4_data *rmi4_data,
 				sizeof(query_9.data));
 		if (retval < 0)
 			return retval;
-
 		offset += sizeof(query_9.data);
 	}
+
+	retval = synaptics_rmi4_set_intr_mask(fhandler, fd, intr_count);
+	if (retval < 0)
+		return retval;
 
 	/* query 10 */
 	if (query_0_5.has_gestures && query_7_8.has_touch_shapes)
