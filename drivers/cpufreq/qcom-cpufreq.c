@@ -31,7 +31,7 @@
 #include <trace/events/power.h>
 
 static DEFINE_MUTEX(l2bw_lock);
-static unsigned long arg_cpu_max_a53 = 1440000;
+static unsigned long arg_cpu_max_a53 = 1632000;
  static int __init cpufreq_read_cpu_max_a53(char *cpu_max_a53)
 {
 	unsigned long ui_khz;
