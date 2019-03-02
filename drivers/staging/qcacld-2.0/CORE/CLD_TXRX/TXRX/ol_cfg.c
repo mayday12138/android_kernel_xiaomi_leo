@@ -39,6 +39,7 @@ MODULE_PARM_DESC(mac, "QCA 6164 mac address");
 EXPORT_SYMBOL(mac);
 #endif
 
+
 #ifdef QCA_SUPPORT_TXRX_HL_BUNDLE
 /**
  * ol_cfg_update_bundle_params() - update tx bundle params
