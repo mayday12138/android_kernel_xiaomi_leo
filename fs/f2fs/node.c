@@ -2699,11 +2699,6 @@ static int init_free_nid_cache(struct f2fs_sb_info *sbi)
 	if (!nm_i->free_nid_count)
 		return -ENOMEM;
 
-	nm_i->free_nid_count = f2fs_kvzalloc(nm_i->nat_blocks *
-					sizeof(unsigned short), GFP_KERNEL);
-	if (!nm_i->free_nid_count)
-		return -ENOMEM;
-
 	spin_lock_init(&nm_i->free_nid_lock);
 
 	return 0;
