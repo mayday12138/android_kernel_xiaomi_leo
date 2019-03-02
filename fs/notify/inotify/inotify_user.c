@@ -765,8 +765,6 @@ SYSCALL_DEFINE3(inotify_add_watch, int, fd, const char __user *, pathname,
 	if (ret)
 		goto fput_and_out;
 
-<<<<<<< HEAD
-=======
 	/* support stacked filesystems */
 	if(path.dentry && path.dentry->d_op) {
 		if (path.dentry->d_op->d_canonical_path) {
@@ -776,7 +774,6 @@ SYSCALL_DEFINE3(inotify_add_watch, int, fd, const char __user *, pathname,
 		}
 	}
 
->>>>>>> 3a806df4bb8... vfs: change d_canonical_path to take two paths
 	/* inode held in place by reference to path; group by fget on fd */
 	inode = path.dentry->d_inode;
 	group = f.file->private_data;
