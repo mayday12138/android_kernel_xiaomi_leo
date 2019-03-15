@@ -1,4 +1,5 @@
-/* Copyright (c) 2014-2017, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2014-2015, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2018 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -385,15 +386,12 @@ int copy_ul_filter_rule_to_ipa(struct ipa_install_fltr_rule_req_msg_v01
 {
 	int rc = 0, i, j;
 
-	/* prevent multi-threads accessing num_q6_rule */
-	mutex_lock(&add_mux_channel_lock);
 	if (rule_req->filter_spec_list_valid == true) {
 		num_q6_rule = rule_req->filter_spec_list_len;
 		IPAWANDBG("Received (%d) install_flt_req\n", num_q6_rule);
 	} else {
 		num_q6_rule = 0;
 		IPAWANERR("got no UL rules from modem\n");
-		mutex_unlock(&add_mux_channel_lock);
 		return -EINVAL;
 	}
 	/* copy UL filter rules from Modem*/
@@ -552,7 +550,6 @@ int copy_ul_filter_rule_to_ipa(struct ipa_install_fltr_rule_req_msg_v01
 			ipv4_frag_eq_present = rule_req->filter_spec_list[i].
 			filter_rule.ipv4_frag_eq_present;
 	}
-	mutex_unlock(&add_mux_channel_lock);
 	return rc;
 }
 
@@ -1286,6 +1283,7 @@ static int ipa_wwan_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 				sizeof(mux_channel[rmnet_index].vchannel_name));
 			mux_channel[rmnet_index].vchannel_name[
 				IFNAMSIZ - 1] = '\0';
+
 			IPAWANDBG("cashe device[%s:%d] in IPA_wan[%d]\n",
 				mux_channel[rmnet_index].vchannel_name,
 				mux_channel[rmnet_index].mux_id,
@@ -1356,8 +1354,6 @@ static int ipa_wwan_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 				IPAWANERR("failed to config egress endpoint\n");
 
 			if (num_q6_rule != 0) {
-				/* protect num_q6_rule */
-				mutex_lock(&add_mux_channel_lock);
 				/* already got Q6 UL filter rules*/
 				rc = wwan_add_ul_flt_rule_to_ipa();
 				egress_set = true;
@@ -1365,7 +1361,6 @@ static int ipa_wwan_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 					IPAWANERR("install UL rules failed\n");
 				else
 					a7_ul_flt_set = true;
-				mutex_unlock(&add_mux_channel_lock);
 			} else {
 				/* wait Q6 UL filter rules*/
 				egress_set = true;
@@ -2292,9 +2287,6 @@ int rmnet_ipa_set_data_quota(struct wan_ioctl_set_data_quota *data)
 	int index;
 	struct ipa_set_data_usage_quota_req_msg_v01 req;
 
-	/* prevent string buffer overflows */
-	data->interface_name[IFNAMSIZ-1] = '\0';
-
 	index = find_vchannel_name_index(data->interface_name);
 	IPAWANERR("iface name %s, quota %lu\n",
 			  data->interface_name,
@@ -2330,30 +2322,13 @@ int rmnet_ipa_set_data_quota(struct wan_ioctl_set_data_quota *data)
  *
  * Return codes:
  * 0: Success
- * -EFAULT: Invalid src/dst pipes provided
+ * -EFAULT: Invalid interface name provided
  * other: See ipa_qmi_set_data_quota
  */
 int rmnet_ipa_set_tether_client_pipe(
 	struct wan_ioctl_set_tether_client_pipe *data)
 {
 	int number, i;
-
-	/* error checking if ul_src_pipe_len valid or not*/
-	if (data->ul_src_pipe_len > QMI_IPA_MAX_PIPES_V01 ||
-		data->ul_src_pipe_len < 0) {
-		IPAWANERR("UL src pipes %d exceeding max %d\n",
-			data->ul_src_pipe_len,
-			QMI_IPA_MAX_PIPES_V01);
-		return -EFAULT;
-	}
-	/* error checking if dl_dst_pipe_len valid or not*/
-	if (data->dl_dst_pipe_len > QMI_IPA_MAX_PIPES_V01 ||
-		data->dl_dst_pipe_len < 0) {
-		IPAWANERR("DL dst pipes %d exceeding max %d\n",
-			data->dl_dst_pipe_len,
-			QMI_IPA_MAX_PIPES_V01);
-		return -EFAULT;
-	}
 
 	IPAWANDBG("client %d, UL %d, DL %d, reset %d\n",
 	data->ipa_client,
@@ -2618,9 +2593,7 @@ static int __init ipa_wwan_init(void)
 
 	atomic_set(&is_initialized, 0);
 	atomic_set(&is_ssr, 0);
-
 	mutex_init(&add_mux_channel_lock);
-	ipa_qmi_init();
 	/* Register for Modem SSR */
 	subsys = subsys_notif_register_notifier(SUBSYS_MODEM, &ssr_notifier);
 	if (!IS_ERR(subsys))
@@ -2631,7 +2604,6 @@ static int __init ipa_wwan_init(void)
 
 static void __exit ipa_wwan_cleanup(void)
 {
-	ipa_qmi_cleanup();
 	mutex_destroy(&add_mux_channel_lock);
 	platform_driver_unregister(&rmnet_ipa_driver);
 }

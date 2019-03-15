@@ -1,4 +1,5 @@
-/* Copyright (c) 2014-2015, 2017 The Linux Foundation. All rights reserved.
+/* Copyright (c) 2014-2015,2017 The Linux Foundation. All rights reserved.
+ * Copyright (C) 2018 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -359,24 +360,6 @@ static bool glink_pkt_read_avail(struct glink_pkt_dev *devp)
 }
 
 /**
- * glink_pkt_read_avail() - check any pending packets to read
- * devp:	pointer to G-Link packet device.
- *
- * This function is used to check any pending data packets are
- * available to read or not.
- */
-static bool glink_pkt_read_avail(struct glink_pkt_dev *devp)
-{
-	bool list_is_empty;
-	unsigned long flags;
-
-	spin_lock_irqsave(&devp->pkt_list_lock, flags);
-	list_is_empty = list_empty(&devp->pkt_list);
-	spin_unlock_irqrestore(&devp->pkt_list_lock, flags);
-	return !list_is_empty;
-}
-
-/**
  * glink_pkt_read() - read() syscall for the glink_pkt device
  * file:	Pointer to the file structure.
  * buf:	Pointer to the userspace buffer.
@@ -413,8 +396,8 @@ ssize_t glink_pkt_read(struct file *file,
 		__func__, devp->i, count);
 
 	ret = wait_event_interruptible(devp->ch_read_wait_queue,
-				     !devp->handle || devp->in_reset ||
-				     glink_pkt_read_avail(devp));
+				!devp->handle ||devp->in_reset ||
+				glink_pkt_read_avail(devp));
 	if (!devp->handle) {
 		GLINK_PKT_ERR("%s on a closed glink_pkt_dev id:%d\n",
 			__func__, devp->i);

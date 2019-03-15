@@ -1,4 +1,5 @@
 /* Copyright (c) 2013-2015, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2018 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -360,7 +361,7 @@ static uint32_t msm_cpp_read(void __iomem *cpp_base)
 	uint32_t tmp, retry = 0;
 	do {
 		tmp = msm_camera_io_r(cpp_base + MSM_CPP_MICRO_FIFO_TX_STAT);
-	} while (((tmp & 0x2) == 0x0) && (retry++ < 10));
+	} while (((tmp & 0x2) == 0x0) && (retry++ < 10)) ;
 	if (retry < 10) {
 		tmp = msm_camera_io_r(cpp_base + MSM_CPP_MICRO_FIFO_TX_DATA);
 		CPP_DBG("Read data: 0%x\n", tmp);
@@ -1207,7 +1208,7 @@ static void cpp_load_fw(struct cpp_device *cpp_dev, char *fw_name_bin)
 		rc = request_firmware(&fw, fw_name_bin, dev);
 		if (rc) {
 			dev_err(dev,
-				"Fail to loc blob %s from dev %pK, Error: %d\n",
+				"Fail to loc blob %s from dev %p, Error: %d\n",
 				fw_name_bin, dev, rc);
 		}
 		if (NULL != fw)
@@ -1287,13 +1288,13 @@ static int cpp_open_node(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 	CPP_DBG("E\n");
 
 	if (!sd || !fh) {
-		pr_err("Wrong input parameters sd %pK fh %pK!",
+		pr_err("Wrong input parameters sd %p fh %p!",
 			sd, fh);
 		return -EINVAL;
 	}
 	cpp_dev = v4l2_get_subdevdata(sd);
 	if (!cpp_dev) {
-		pr_err("failed: cpp_dev %pK\n", cpp_dev);
+		pr_err("failed: cpp_dev %p\n", cpp_dev);
 		return -EINVAL;
 	}
 	mutex_lock(&cpp_dev->mutex);
@@ -1316,7 +1317,7 @@ static int cpp_open_node(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 		return -ENODEV;
 	}
 
-	CPP_DBG("open %d %pK\n", i, &fh->vfh);
+	CPP_DBG("open %d %p\n", i, &fh->vfh);
 	cpp_dev->cpp_open_cnt++;
 	if (cpp_dev->cpp_open_cnt == 1) {
 		rc = cpp_init_hardware(cpp_dev);
@@ -1349,7 +1350,7 @@ static int cpp_close_node(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
 	cpp_dev =  v4l2_get_subdevdata(sd);
 
 	if (!cpp_dev) {
-		pr_err("failed: cpp_dev %pK\n", cpp_dev);
+		pr_err("failed: cpp_dev %p\n", cpp_dev);
 		return -EINVAL;
 	}
 
@@ -1608,7 +1609,7 @@ static void msm_cpp_do_timeout_work(struct work_struct *work)
 	mutex_lock(&cpp_dev->mutex);
 
 	if (!work || cpp_timer.data.cpp_dev->state != CPP_STATE_ACTIVE) {
-		pr_err("Invalid work:%pK or state:%d\n", work,
+		pr_err("Invalid work:%p or state:%d\n", work,
 			cpp_timer.data.cpp_dev->state);
 		goto end;
 	}
@@ -1729,9 +1730,9 @@ static int msm_cpp_send_frame_to_hardware(struct cpp_device *cpp_dev,
 		queue_len = cpp_dev->processing_q.len;
 		spin_unlock_irqrestore(&cpp_timer.data.processed_frame_lock,
 			flags);
-		if (queue_len == 1)
+		if (queue_len == 1) {
 			atomic_set(&cpp_timer.used, 1);
-
+		}
 		CPP_DBG("Starting timer to fire in %d ms. (jiffies=%lu)\n",
 			CPP_CMD_TIMEOUT_MS, jiffies);
 		ret = mod_timer(&cpp_timer.cpp_timer,
@@ -1960,6 +1961,11 @@ static int msm_cpp_cfg_frame(struct cpp_device *cpp_dev,
 			(stripe_base +
 			new_frame->num_strips * stripe_size + 1));
 		return -EINVAL;
+	}
+
+	if (cpp_dev->iommu_state != CPP_IOMMU_STATE_ATTACHED) {
+		pr_info("IOMMU is not attached\n");
+		return -EAGAIN;
 	}
 
 	if (cpp_dev->iommu_state != CPP_IOMMU_STATE_ATTACHED) {
@@ -2267,7 +2273,7 @@ static int msm_cpp_copy_from_ioctl_ptr(void *dst_ptr,
 {
 	int ret;
 	if ((ioctl_ptr->ioctl_ptr == NULL) || (ioctl_ptr->len == 0)) {
-		pr_err("%s: Wrong ioctl_ptr %pK / len %zu\n", __func__,
+		pr_err("%s: Wrong ioctl_ptr %p / len %zu\n", __func__,
 			ioctl_ptr, ioctl_ptr->len);
 		return -EINVAL;
 	}
@@ -2290,7 +2296,7 @@ static int msm_cpp_copy_from_ioctl_ptr(void *dst_ptr,
 {
 	int ret;
 	if ((ioctl_ptr->ioctl_ptr == NULL) || (ioctl_ptr->len == 0)) {
-		pr_err("%s: Wrong ioctl_ptr %pK / len %zu\n", __func__,
+		pr_err("%s: Wrong ioctl_ptr %p / len %zu\n", __func__,
 			ioctl_ptr, ioctl_ptr->len);
 		return -EINVAL;
 	}
@@ -2304,55 +2310,21 @@ static int msm_cpp_copy_from_ioctl_ptr(void *dst_ptr,
 }
 #endif
 
-
-static int msm_cpp_validate_ioctl_input(unsigned int cmd, void *arg,
-	struct msm_camera_v4l2_ioctl_t **ioctl_ptr)
-{
-	switch (cmd) {
-	case MSM_SD_SHUTDOWN:
-	case VIDIOC_MSM_CPP_IOMMU_ATTACH:
-	case VIDIOC_MSM_CPP_IOMMU_DETACH:
-		break;
-	default: {
-		if (ioctl_ptr == NULL) {
-			pr_err("Wrong ioctl_ptr for cmd %u\n", cmd);
-			return -EINVAL;
-		}
-
-		*ioctl_ptr = arg;
-		if (((*ioctl_ptr) == NULL) ||
-			((*ioctl_ptr)->ioctl_ptr == NULL) ||
-			((*ioctl_ptr)->len == 0)) {
-			pr_err("Error invalid ioctl argument cmd %u", cmd);
-			return -EINVAL;
-		}
-		break;
-	}
-	}
-	return 0;
-}
-
 long msm_cpp_subdev_ioctl(struct v4l2_subdev *sd,
 			unsigned int cmd, void *arg)
 {
 	struct cpp_device *cpp_dev = NULL;
-	struct msm_camera_v4l2_ioctl_t *ioctl_ptr = NULL;
+	struct msm_camera_v4l2_ioctl_t *ioctl_ptr = arg;
 	int rc = 0;
 
-	if (sd == NULL) {
-		pr_err("sd %pK\n", sd);
+	if ((sd == NULL) || (ioctl_ptr == NULL)) {
+		pr_err("Wrong ioctl_ptr %p, sd %p\n", ioctl_ptr, sd);
 		return -EINVAL;
 	}
 
 	if (_IOC_DIR(cmd) == _IOC_NONE) {
 		pr_err("Invalid ioctl/subdev cmd %u", cmd);
 		return -EINVAL;
-	}
-
-	rc = msm_cpp_validate_ioctl_input(cmd, arg, &ioctl_ptr);
-	if (rc != 0) {
-		pr_err("input validation failed\n");
-		return rc;
 	}
 
 	cpp_dev = v4l2_get_subdevdata(sd);
@@ -2792,7 +2764,6 @@ STREAM_BUFF_END:
 				pr_err("%s:%dError iommu_attach_device failed\n",
 					__func__, __LINE__);
 				rc = -EINVAL;
-				break;
 			}
 			cpp_dev->iommu_state = CPP_IOMMU_STATE_ATTACHED;
 		} else {
@@ -2807,17 +2778,10 @@ STREAM_BUFF_END:
 			(cpp_dev->stream_cnt == 0)) {
 			iommu_detach_device(cpp_dev->domain,
 				cpp_dev->iommu_ctx);
-			if (rc < 0) {
-				pr_err("%s:%dError iommu detach failed\n",
-					__func__, __LINE__);
-				rc = -EINVAL;
-				break;
-			}
 			cpp_dev->iommu_state = CPP_IOMMU_STATE_DETACHED;
 		} else {
 			pr_err("%s:%d IOMMMU attach triggered in invalid state\n",
 				__func__, __LINE__);
-			rc = -EINVAL;
 		}
 		break;
 	}
@@ -2859,14 +2823,14 @@ static long msm_cpp_subdev_do_ioctl(
 	struct v4l2_fh *vfh = NULL;
 
 	if ((arg == NULL) || (file == NULL)) {
-		pr_err("Invalid input parameters arg %pK, file %pK\n", arg, file);
+		pr_err("Invalid input parameters arg %p, file %p\n", arg, file);
 		return -EINVAL;
 	}
 	vdev = video_devdata(file);
 	sd = vdev_to_v4l2_subdev(vdev);
 
 	if (sd == NULL) {
-		pr_err("Invalid input parameter sd %pK\n", sd);
+		pr_err("Invalid input parameter sd %p\n", sd);
 		return -EINVAL;
 	}
 	vfh = file->private_data;
@@ -3137,7 +3101,6 @@ static long msm_cpp_subdev_fops_compat_ioctl(struct file *file,
 	struct msm_cpp_frame_info32_t k32_frame_info;
 	struct msm_cpp_frame_info_t k64_frame_info;
 	void __user *up = (void __user *)arg;
-	bool is_copytouser_req = true;
 
 	if (sd == NULL) {
 		pr_err("%s: Subdevice is NULL\n", __func__);
@@ -3145,7 +3108,7 @@ static long msm_cpp_subdev_fops_compat_ioctl(struct file *file,
 	}
 	cpp_dev = v4l2_get_subdevdata(sd);
 	if (!vdev || !cpp_dev) {
-		pr_err("Invalid vdev %pK or cpp_dev %pK structures!",
+		pr_err("Invalid vdev %p or cpp_dev %p structures!",
 			vdev, cpp_dev);
 		return -EINVAL;
 	}
@@ -3294,7 +3257,6 @@ static long msm_cpp_subdev_fops_compat_ioctl(struct file *file,
 		k64_cpp_buff_info.buffer_info =
 			compat_ptr(k32_cpp_buff_info.buffer_info);
 		kp_ioctl.ioctl_ptr = (void *)&k64_cpp_buff_info;
-		is_copytouser_req = false;
 		if (cmd == VIDIOC_MSM_CPP_ENQUEUE_STREAM_BUFF_INFO32)
 			cmd = VIDIOC_MSM_CPP_ENQUEUE_STREAM_BUFF_INFO;
 		else if (cmd == VIDIOC_MSM_CPP_DELETE_STREAM_BUFF32)
@@ -3360,7 +3322,6 @@ static long msm_cpp_subdev_fops_compat_ioctl(struct file *file,
 				kp_ioctl.len =
 					sizeof(struct msm_cpp_clock_settings_t);
 		}
-		is_copytouser_req = false;
 		cmd = VIDIOC_MSM_CPP_SET_CLOCK;
 		break;
 	}
@@ -3391,7 +3352,6 @@ static long msm_cpp_subdev_fops_compat_ioctl(struct file *file,
 
 		kp_ioctl.ioctl_ptr = (void *)&k_queue_buf;
 		kp_ioctl.len = sizeof(struct msm_pproc_queue_buf_info);
-		is_copytouser_req = false;
 		cmd = VIDIOC_MSM_CPP_QUEUE_BUF;
 		break;
 	}
@@ -3412,7 +3372,6 @@ static long msm_cpp_subdev_fops_compat_ioctl(struct file *file,
 		k64_frame_info.frame_id = k32_frame_info.frame_id;
 
 		kp_ioctl.ioctl_ptr = (void *)&k64_frame_info;
-		is_copytouser_req = false;
 		cmd = VIDIOC_MSM_CPP_POP_STREAM_BUFFER;
 		break;
 	}
@@ -3428,7 +3387,7 @@ static long msm_cpp_subdev_fops_compat_ioctl(struct file *file,
 	default:
 		pr_err_ratelimited("%s: unsupported compat type :%x LOAD %lu\n",
 				__func__, cmd, VIDIOC_MSM_CPP_LOAD_FIRMWARE);
-		return -EINVAL;
+		break;
 	}
 
 	switch (cmd) {
@@ -3454,19 +3413,17 @@ static long msm_cpp_subdev_fops_compat_ioctl(struct file *file,
 	default:
 		pr_err_ratelimited("%s: unsupported compat type :%d\n",
 				__func__, cmd);
-		return -EINVAL;
+		break;
 	}
 
-	if (is_copytouser_req) {
-		up32_ioctl.id = kp_ioctl.id;
-		up32_ioctl.len = kp_ioctl.len;
-		up32_ioctl.trans_code = kp_ioctl.trans_code;
-		up32_ioctl.ioctl_ptr = ptr_to_compat(kp_ioctl.ioctl_ptr);
+	up32_ioctl.id = kp_ioctl.id;
+	up32_ioctl.len = kp_ioctl.len;
+	up32_ioctl.trans_code = kp_ioctl.trans_code;
+	up32_ioctl.ioctl_ptr = ptr_to_compat(kp_ioctl.ioctl_ptr);
 
-		if (copy_to_user((void __user *)up, &up32_ioctl,
-			sizeof(up32_ioctl)))
-			return -EFAULT;
-	}
+	if (copy_to_user((void __user *)up, &up32_ioctl, sizeof(up32_ioctl)))
+		return -EFAULT;
+
 	return rc;
 }
 #endif

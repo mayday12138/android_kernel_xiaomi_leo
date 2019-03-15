@@ -1,4 +1,5 @@
-/* Copyright (c) 2008-2017, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2008-2016, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2018 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -209,12 +210,12 @@ kgsl_mem_entry_create(void)
 {
 	struct kgsl_mem_entry *entry = kzalloc(sizeof(*entry), GFP_KERNEL);
 
-	if (entry) {
+	if (entry != NULL) {
 		kref_init(&entry->refcount);
+
 		/* put this ref in the caller functions after init */
 		kref_get(&entry->refcount);
 	}
-
 	return entry;
 }
 #ifdef CONFIG_DMA_SHARED_BUFFER
@@ -2779,6 +2780,9 @@ static int kgsl_setup_phys_file(struct kgsl_mem_entry *entry,
 	if (ret)
 		goto err;
 
+	/* put the extra refcount for kgsl_mem_entry_create() */
+	kgsl_mem_entry_put(entry);
+
 	return 0;
 err:
 	return ret;
@@ -2954,16 +2958,15 @@ static int kgsl_setup_useraddr(struct kgsl_mem_entry *entry,
 		if (fd != 0)
 			dmabuf = dma_buf_get(fd - 1);
 	}
+	up_read(&current->mm->mmap_sem);
 
 	if (!IS_ERR_OR_NULL(dmabuf)) {
 		ret = kgsl_setup_dma_buf(entry, pagetable, device, dmabuf);
-		if (ret) {
+		if (ret)
 			dma_buf_put(dmabuf);
-			up_read(&current->mm->mmap_sem);
-		}else {
+		else {
 			/* Match the cache settings of the vma region */
 			_setup_cache_mode(entry, vma);
-			up_read(&current->mm->mmap_sem);
 			/* Set the useraddr to the incoming hostptr */
 			entry->memdesc.useraddr = param->hostptr;
 		}
@@ -3645,9 +3648,9 @@ long kgsl_ioctl_gpumem_alloc(struct kgsl_device_private *dev_priv,
 	param->flags = entry->memdesc.flags;
 
 	kgsl_mem_entry_commit_process(private, entry);
-
 	/* put the extra refcount for kgsl_mem_entry_create() */
 	kgsl_mem_entry_put(entry);
+
 	return result;
 err:
 	kgsl_sharedmem_free(&entry->memdesc);
@@ -3695,7 +3698,6 @@ long kgsl_ioctl_gpumem_alloc_id(struct kgsl_device_private *dev_priv,
 	param->gpuaddr = entry->memdesc.gpuaddr;
 
 	kgsl_mem_entry_commit_process(private, entry);
-
 	/* put the extra refcount for kgsl_mem_entry_create() */
 	kgsl_mem_entry_put(entry);
 	return result;
@@ -4864,7 +4866,6 @@ static void kgsl_core_exit(void)
 static int __init kgsl_core_init(void)
 {
 	int result = 0;
-	struct  sched_pa​​ram  param  =  {  。sched_priority  =  16  };
 	/* alloc major and minor device numbers */
 	result = alloc_chrdev_region(&kgsl_driver.major, 0, KGSL_DEVICE_MAX,
 		"kgsl");

@@ -1,6 +1,7 @@
 /*
  *  ALSA sequencer Client Manager
  *  Copyright (c) 1998-2001 by Frank van de Pol <fvdpol@coil.demon.nl>
+ *  Copyright (C) 2018 XiaoMi, Inc.
  *                             Jaroslav Kysela <perex@perex.cz>
  *                             Takashi Iwai <tiwai@suse.de>
  *
@@ -678,9 +679,6 @@ static int deliver_to_subscribers(struct snd_seq_client *client,
 	else
 		down_read(&grp->list_mutex);
 	list_for_each_entry(subs, &grp->list_head, src_list) {
-		/* both ports ready? */
-		if (atomic_read(&subs->ref_count) != 2)
-			continue;
 		event->dest = subs->info.dest;
 		if (subs->info.flags & SNDRV_SEQ_PORT_SUBS_TIMESTAMP)
 			/* convert time according to flag with subscription */
@@ -1239,8 +1237,8 @@ static int snd_seq_ioctl_set_client_info(struct snd_seq_client *client,
 }
 
 
-/* 
- * CREATE PORT ioctl() 
+/*
+ * CREATE PORT ioctl()
  */
 static int snd_seq_ioctl_create_port(struct snd_seq_client *client,
 				     void __user *arg)
@@ -1294,8 +1292,8 @@ static int snd_seq_ioctl_create_port(struct snd_seq_client *client,
 	return 0;
 }
 
-/* 
- * DELETE PORT ioctl() 
+/*
+ * DELETE PORT ioctl()
  */
 static int snd_seq_ioctl_delete_port(struct snd_seq_client *client,
 				     void __user *arg)
@@ -1913,7 +1911,6 @@ static int snd_seq_ioctl_set_client_pool(struct snd_seq_client *client,
 	     info.output_pool != client->pool->size)) {
 		if (snd_seq_write_pool_allocated(client)) {
 			/* remove all existing cells */
-			snd_seq_pool_mark_closing(client->pool);
 			snd_seq_queue_client_leave_cells(client->number);
 			snd_seq_pool_done(client->pool);
 		}
@@ -1958,7 +1955,7 @@ static int snd_seq_ioctl_remove_events(struct snd_seq_client *client,
 		 * No restrictions so for a user client we can clear
 		 * the whole fifo
 		 */
-		if (client->type == USER_CLIENT && client->data.user.fifo)
+		if (client->type == USER_CLIENT)
 			snd_seq_fifo_clear(client->data.user.fifo);
 	}
 

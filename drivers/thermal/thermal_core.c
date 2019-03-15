@@ -308,6 +308,7 @@ static __ref int sensor_sysfs_notify(void *data)
 }
 
 /* May be called in an interrupt context.
+=======
  * Do NOT call sensor_set_trip from this function
  */
 int thermal_sensor_trip(struct thermal_zone_device *tz,
@@ -1378,7 +1379,7 @@ temp_crit_show(struct device *dev, struct device_attribute *attr,
 	long temperature;
 	int ret;
 
-	ret = tz->ops->get_crit_temp(tz, &temperature);
+	ret = tz->ops->get_trip_temp(tz, 0, &temperature);
 	if (ret)
 		return ret;
 
