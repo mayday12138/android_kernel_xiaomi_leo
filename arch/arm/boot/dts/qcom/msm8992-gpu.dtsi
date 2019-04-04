@@ -109,7 +109,7 @@
 			/* superturbo  */
 			qcom,gpu-pwrlevel@0 {
 				reg = <0>;
-				qcom,gpu-freq = <690000000>;
+				qcom,gpu-freq = <650000000>;
 				qcom,bus-freq = <7>;
 				qcom,bus-min = <7>;
 				qcom,bus-max = <7>;
@@ -183,7 +183,7 @@
                         qcom,msm-bus,num-cases = <8>;
                         qcom,msm-bus,num-paths = <1>;
                         qcom,msm-bus,vectors-KBps =
-                <89 662 0 11520000>,     /* gpu=690 */
+                		<89 662 0 11520000>,     /* gpu=650 */
 				<89 662 0 9600000>,     /* gpu=600 */
 				<89 662 0 7840000>,     /* gpu=490 */
 				<89 662 0 7200000>,     /* gpu=450 */
